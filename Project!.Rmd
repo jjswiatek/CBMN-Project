@@ -1,0 +1,413 @@
+---
+title: "The affects of Climate Change on Butterfly species across Colorado"
+author: "Jeremy Swiatek"
+output:
+  word_document: default
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+```{r, echo=FALSE, warning=FALSE, error=FALSE, message= FALSE}
+r = getOption("repos")
+r["CRAN"] = "http://cran.us.r-project.org"
+options(repos = r)
+```
+
+```{r, echo=FALSE, warning=FALSE, error=FALSE, message=FALSE}
+install.packages("ggplot2")
+install.packages("gridExtra")
+install.packages("dplyr") 
+install.packages("car")
+install.packages("plotly")
+install.packages("ggthemes")
+install.packages("readr")
+install.packages("ggrepel")
+install.packages("tidyverse")
+install.packages("olsrr")
+```
+
+```{r, echo=FALSE, warning=FALSE, error=FALSE, message=FALSE}
+library(ggplot2)
+require(gridExtra)
+library(dplyr)
+library(car)
+library(plotly)
+library(ggthemes)
+library(readr)
+library(ggrepel)
+library(tidyverse)
+library(olsrr)
+```
+
+## Introduction
+
+The Colorado Butterfly Monitoring Network (CBMN) at The Butterfly Pavilion is a program designed to collect survey data of butterfly species in Colorado. The surveys are collected by volunteers who are tasked with choosing routes to monitor and collect at least six surveys about the different species of butterflies they see and record them in PollardBase. PollardBase is a data collection service that allows volunteers to record their surveys and upload data such as: temperature, weather condition, habitat, duration of hike, and wind conditions. The monitoring season runs from May through September and has been an active monitoring network since 2013 with the most credible data coming from 2014 on.The program has completed 1,472 surveys in the last 4 years alone covering 95 different routes. The goal of the CMBN program is to use the surveys to find something interesting about the butterfly population in Colorado.This project will be looking at five trails across Colorado from 2016-2019 and attempt to find trends about how Colorados butterfly species are being affected by current climate change. 
+
+By looking at counts of butterflies seen in each year, we can determine which butterflies are consistently in an area and which ones are becoming threatened by climate change. It’s important to understand the links between butterflies and climate change because butterflies are great bioindicators on climate (Parmesan 2003, 24). Most species need specific hostplants to support caterpillar growth and protection. By identifying which butterflies occupy which areas, we can make assumptions about the plant life and habitat of the area and compare that with previous years to see if the trend holds up. Butterflies are also important bioindicators because they have multiple life cycles in a short period of time. This allows us to look at generational butterfly migrations to see if butterflies are migrating in different patterns. Patterns of migration are interesting to look at because they tell the story of the migratory species’ drive to move from one place to another to promote survival. 
+
+As climate- and moisture-sensitive creatures, butterflies are great bioindicators for identifying changes in weather through minor dispersal to find the most optimal conditions for life (Parmesan 2003, 24). By looking at climate/weather data from locations around colorado, temperature data at each survey, and individual site statistics it will help find some kind of trend in Colorado's butterfly population and climate change. With temperatures rising and becoming more variable, and as more areas in Colorado exhibit drought-like conditions, we hypothesize that the butterfly population is losing diversity. If conditions continue to follow this trend, then Colorado’s butterfly population will become much less diverse and we will see a micro evolution favoring species that migrate over ones that stay sedentary.
+
+## Overview of Monitoring Statisitcs
+```{r, echo=FALSE, warning=FALSE, error=FALSE}
+General <- read.csv("General_Info.csv")
+General_dotplot <- ggplot(General, aes(x=Year, y=Count, group=Site, color=Site, text = paste(Count))) + geom_point() + geom_line() + ggtitle("Change in Total Butterfly population by Site") + scale_color_calc()
+ggplotly(General_dotplot, tooltip="text") 
+```
+
+The plot above outlines the trend seen in the 5 sites over the last four years. It shows that the most consistent route was the Aldefer/ 3 Sisters trail because over the last four years there has been very little change in the quantity of species seen. This is likely due to the monitor being consistent about when they survey or the number of surveys recorded making the route a reliable source for gathering consistent data. This graph also shows that for three sites (Upper Big Bluestrem Trail, Sand Creek Riparian Preserve, and Broomfield Commons Park) had noticable dips in the quantity of butterflies seen in 2018. Since the trend is apparent in the graph we can assume that it was caused by events going on in Colorado such as heavy percipitation and flooding, drought or fire throughout the summer months, construction inhibiting the volunteers ability to get to the route consistently. This trend will be exploared in great detail later on however it is important to identify these trend so a condlusion may be reached. The final trend found in the graph was that almost all years have a general positive trend, whle there are some dips in the data the sites monitored have a positive trend with volunteers seeing an increased amount of butterflies each year.
+  
+```{r, echo=FALSE, message=FALSE}
+General_bar <- ggplot(General, aes(x=Site, y=Count, fill=factor(Year))) + geom_bar(width=NULL, stat="identity", position="dodge") + theme_tufte() + theme(text = element_text(size=10), axis.text.x = element_text(angle=45, hjust=1)) + ggtitle("Quantity of Butterflies found at each site: Bar Chart") 
+General_bar 
+```
+  
+This bar chart is a representation of the graph "Change in Total Butterfly population by Site" making it easier to show which years had the most butterflies observed. Across all five sites the most butterflies observed was in 2019 which is likely due to having better trained monitores and having volunteers monitor routes more consistently. As each year goes on monitors become more expirinced with their hikes and the butterflies they tend to see which mkaes them more confident in identifying species. It's important that we have volunteers being consistent about monitoring becasue then it could be more standardized giving more accurate results.
+  
+# Volunteer Statisitcs
+```{r, echo=FALSE}
+Volunteer_Info <- read.csv("Volunteer_Summary.csv")
+
+old.par <- par(mfrow=c(1,3))
+Volunteer_dotplot <- ggplot(data = Volunteer_Info, aes(x= Year, y= Surveys.Completed)) + geom_point() + geom_line() + expand_limits(y=0) + ylab("Surveys Completed") + theme_tufte() + ggtitle("Surveys completed")
+Volunteer_dotplot2 <- ggplot(data = Volunteer_Info, aes(x= Year, y= Number.of.Routes.Monitored)) + geom_point() + geom_line() + expand_limits(y=0) + ylab("Number of Routes Monitored") + ggtitle("Number of Routes Monitored") + theme_tufte()
+Volunteer_dotplot3 <- ggplot(data = Volunteer_Info, aes(x= Year, y= Number.of.Volunteers)) + geom_point() + geom_line() + expand_limits(y=0) + ylab("Number of Volunteers ") + ggtitle("Number of Volunteers each year") + theme_tufte()
+grid.arrange(Volunteer_dotplot, Volunteer_dotplot2, Volunteer_dotplot3, ncol=2)
+```
+ 
+The graph's "Surveys Completed", "Number of Routes Monitored" and "Number of Volunteers each year" are ment to show the impact of how having volunteers matters. From 2014-2019 the number of survey's completed and routes monitored follow a similar pattern of consistency while the number of volunteers has changed each year the program has been going on. Along with the visual patterns a Pearsons correlation test was completed on the three variables and found that the correlation between: surveys completed and number of routes monitored is 0.6289, surveys completed and number of volunteers is 0.6246, and number of volunteers and number of routes monitored is 0.8192.  Therefore the number of surveys completed compared to routes and volunteers are both mildly correlated and do have some impact on explaining each other in the data. While number of volunteers and number of routes monitored are highly correlated and we know that the two variables heavily affect each other with changes to the data.
+
+```{r, echo=FALSE, eval=FALSE}
+Volunteer_Info <- read.csv("Volunteer_Summary.csv")
+cor1 <- cor.test(Volunteer_Info$Surveys.Completed, Volunteer_Info$Number.of.Routes.Monitored, method="pearson" )
+cor1
+cor2 <- cor.test(Volunteer_Info$Surveys.Completed, Volunteer_Info$Number.of.Volunteers, method="pearson" )
+cor2
+cor3 <- cor.test(Volunteer_Info$Number.of.Volunteers, Volunteer_Info$Number.of.Routes.Monitored, method="pearson" )
+cor3
+```
+
+These are the top 10% of routes monitored by volunteers between 2016-2019.
+```{r, echo=FALSE, message=FALSE}
+Site_Count <- read.csv("Site_Survey_Count.csv")
+Site_Count1 <- select(Site_Count, County, Site, Submitted)
+Site_Top <- filter(Site_Count1, percent_rank(desc(Submitted)) <= 0.10)
+Site_Top
+```
+These are the bottom 10% of routes monitored by volunteers between 2016-2019.
+```{r, echo=FALSE, message=FALSE}
+Site_Count <- read.csv("Site_Survey_Count.csv")
+Site_Count1 <- select(Site_Count, County, Site, Submitted)
+Site_Top <- filter(Site_Count1, percent_rank((Submitted)) <= 0.10)
+Site_Top
+```
+
+# Butterfly counts seen at different duration of hikes.
+
+This section identifies the quantity of butterflies seen at different durations of hikes. The data comes from counting the number of butterflies seen per survey and matching it with duration of that survey in order to see if there is a trend between the length of the hike and the number of butterflies seen. 
+  
+```{r, echo=FALSE}
+General_Duration <- read.csv("Duration_at_Sites.csv")
+
+Duration_hist <- ggplot(General_Duration, aes(x=Duration)) + geom_histogram(binwidth=15, color="black", fill="lightblue") + scale_x_continuous(breaks= seq(10,180,10)) + xlab("Duration(Minutes)") + ylab("Count") + ggtitle("Counts on Duration of Routes Monitored (2016-2019)") + geom_vline(aes(xintercept=mean(Duration)), color="red", linetype="dashed")
+Duration_hist + theme_few()
+```
+ 
+  This histogram shows the distribution of the length of the surveys. The dashed red line is the mean duration of surveys which for this set it's relativily in the middle of the the data with a bell curve like shape showing even distribution around the mean.
+```{r, echo=FALSE}
+Count_hist <- ggplot(General_Duration, aes(x=Count)) + geom_histogram(bins=15, color="black", fill="lightblue") + scale_x_continuous(breaks= seq(0,280,10)) + xlab("Overall Butterfly Count") + ylab("Number of Surveys")+ theme_few() + ggtitle("Counts of Butterflies seen per survey (2016-2019)") + theme(axis.text.x = element_text(angle=45, hjust=1)) + geom_vline(aes(xintercept=mean(Count)), color="red", linetype="dashed")
+Count_hist 
+```
+  
+This histogram shows the distribution of the counts of butterflies and the counts are done by number of surveys. This histogram is skewed left, becasue most of the data is to the left it makes the mean of the data also skew showing that the mean of butterfly counts is approxamitly 50.
+
+```{r, echo=FALSE}
+Duration_Dotplot <- ggplot(General_Duration, aes(y=Duration, x=Count, color=Site)) + geom_point() + ggtitle("Duration of hike compared to Number of Butterflies seen by Site") 
+ggplotly(Duration_Dotplot)
+```
+ 
+In "Duration of hike compared to Number of Butterflies seen by Site" the trends shown in the histograms above are joined together to see if there is some correlation. Visually, it seems that as duration increases it is more likely that the volunteers will see more butterflies however it doesn't look like a well defined pattern. When evaluating the correlation the pearson correlation coefficent was 0.3126 (and the 95% confidence interval is 0.1814 to 0.4329) which means there's some correlation between the two variables however it's very minial. The variability in Duration only explains the variability in Count by 0.0977 which is too low to say that the two variables are correlated.
+
+```{r, echo=FALSE, eval=FALSE}
+General_Duration <- read.csv("Duration_at_Sites.csv")
+cor4 <- cor.test(General_Duration$Count, General_Duration$Duration, method="pearson" )
+cor4
+```
+
+## Climate Statisitcs
+
+# General Climate Information
+
+```{r, echo=FALSE, message=FALSE}
+General_Climate <- read.csv("Climate_data.csv")
+General_Climate$Month <- as.character(General_Climate$Month)
+General_Climate$Month <- factor(General_Climate$Month, levels =unique(General_Climate$Month))
+
+Climate_dotplot <- ggplot(data=General_Climate, aes(x=Month, y=Tempurature, group=Location, color=Location)) + geom_point() + geom_line() + scale_color_calc() + theme(text = element_text(size=10), axis.text.x = element_text(angle=45, hjust=1)) + ggtitle("Temperature Shown at three locations from 2016-2019")
+Climate_dotplot + facet_wrap(~Year)
+
+Precipitation_dotplot <- ggplot(data=General_Climate, aes(x=Month, y=Precipitation, group=Location, color=Location)) + geom_point() + geom_line() + scale_color_calc() + theme(text = element_text(size=10), axis.text.x = element_text(angle=45, hjust=1)) + ggtitle("Precipitation Shown at three locations from 2016-2019")
+Precipitation_dotplot + facet_wrap(~Year)
+
+General_Snowfall <- filter(General_Climate, Snow.Fall >0)
+Snowfall_barplot <- ggplot(General_Snowfall, aes(x=Location, y=Snow.Fall, fill=factor(Year))) + geom_bar(width=NULL, stat="identity", position="dodge") + theme_calc() + ylab("Snowfall (Inches)") + ggtitle("The amount of Snowfall in three locations between April-September by Year") + labs(fill="Year")
+Snowfall_barplot
+```
+  
+Temperature, Percipitation, and Snowfall are three of the most important variables when it comes to examining changes in climate and weather in a place. Temurature was the most consistent variable throughout the four years becasue each year has the same trend er location. There is a steady rise in temperature from April to June and then it spikes from June to July and then it begins to decline as the sumer season ends. Percipitation has been the most non-constant variable throughout the last four years mostly due to weather. It's extremely difficult to predict and be accurate about how much percipitation Colorado gets each year however when examining site locations and butterflies seen at those sites it can be used to make predctions about why we se the species or counts that were recorded. This same strategy is used when looking at snowfall becasue that variable factors based on location heavily it's important to use the data as a guide for why we got the results we did. The snowfall variable only incluedes months where there was greater than 0 inches of snowfall (generally April and May) and surprisingly Steamboat Springs is the only location to have snowfall in June with 1.77 inches (in 2019). Based on these variables we can match the three locations chosen to each closest site in order to see if there is some basis form temperature, percipitation, or snowfall to have some affect on species or counts seen.
+
+# Site Specific Climate Data
+
+Here we are identifying the trend of how average each yar has been so we can then compare it to butterfly counts in order to see some trend of how temperature is affecting Colorado's butterfly population.
+
+```{r, echo=FALSE, message=FALSE}
+General_Climate$Location <- as.character(General_Climate$Location)
+General_Climate$Location <- factor(General_Climate$Location, levels =unique(General_Climate$Location))
+General_Climate$Month <- as.factor(General_Climate$Month)
+
+Denver_Climate <- filter(General_Climate, Location =="Denver")
+Denver_dotplot <- ggplot(data=Denver_Climate, aes(x= Month, y=Tempurature, group= Year, color=as.factor(Year))) + geom_point() + geom_line() + theme(legend.position="top", axis.text.x = element_text(angle=45, hjust=1)) + labs(color="Year") + ylab("Temperature")
+
+Average_Temp <- read.csv("Average_Temp.csv")
+Climate.par <- par(mfrow=c(1,2))
+Average_Temp$Month <- as.character(Average_Temp$Month)
+Average_Temp$Month <- factor(Average_Temp$Month, levels =unique(Average_Temp$Month))
+
+Average_Temp_Denver <- filter(Average_Temp, Site =="Denver")
+Average_dotplot <- ggplot(data=Average_Temp_Denver, aes(x=Month, y=Average.Temp, group=Site)) + geom_point() + geom_line() + geom_label_repel(aes(label=Average.Temp), size=3)  + ggtitle("Average Temperature in Denver compared \nto Actual Temperature")+ theme( axis.text.x = element_text(angle=45, hjust=1), plot.title=element_text(size=10)) + ylab("Average Temperature")
+grid.arrange(Average_dotplot, Denver_dotplot, ncol=2)
+```
+
+In "Average Temperature in Denver compared to Actual Temperature" the graph on the left shows the average temperature in Denver in each month and the graph on the right shows the temperature in each month for the last four years. In general in the last four years June, July, and August has been warmer than usual with only June of 2019 being cooler than the average and August of 2019 was extemely hot compared to average. The years 2018 and 2019 seemed to be the two most different in terms of temperature due to 2018 being much warmer on Average in May and June which could lead to more butterflies evolving from their chrysalis' early and leading to more butetrflies in Denver between May and July. The opposite was true in 2019 where it was much cooler in May and June which most likely lead to host plants coming out earlier and chrysalis' opening much later. The cooler temperatures allow for host plants to mature later which could lead to a longer season for the butterflies however that heavily depends on how cold it begins to get in Septemebr in order for the butterflies to continue to be able to stand the weather conditions.
+
+```{r, echo=FALSE, message=FALSE}
+General_Climate$Location <- as.character(General_Climate$Location)
+General_Climate$Location <- factor(General_Climate$Location, levels =unique(General_Climate$Location))
+
+Evergreen_Climate <- filter(General_Climate, Location =="Evergreen")
+Evergreen_dotplot <- ggplot(data=Evergreen_Climate, aes(x= Month, y=Tempurature, group= Year, color=as.factor(Year))) + geom_point() + geom_line() + theme(legend.position="top", axis.text.x = element_text(angle=45, hjust=1)) + labs(color="Year") + ylab("Temperature")
+
+Average_Temp <- read.csv("Average_Temp.csv")
+Climate.par <- par(mfrow=c(1,2))
+Average_Temp$Month <- as.character(Average_Temp$Month)
+Average_Temp$Month <- factor(Average_Temp$Month, levels =unique(Average_Temp$Month))
+
+Average_Temp_Evergreen <- filter(Average_Temp, Site =="Evergreen")
+Average_dotplot <- ggplot(data=Average_Temp_Evergreen, aes(x=Month, y=Average.Temp, group=Site)) + geom_point() + geom_line() + geom_label_repel(aes(label=Average.Temp), size=3)  + ggtitle("Average Temperature in Evergreen compared \nto Actual Temperature")+ theme( axis.text.x = element_text(angle=45, hjust=1), plot.title=element_text(size=10)) + ylab("Average Temperature")
+grid.arrange(Average_dotplot, Evergreen_dotplot, ncol=2) 
+```
+
+In our second location, Evergreen saw more consistence between the yearr 2016, 2017, and 2019 while 2018 was a much hotter year than the rest. The temperatures for 2018 were actually right around the average we'd expect to have while the other 3 years were surprisingly cold, paticularly in May. For 2016 and 2017 some of the colder weather could be attributed to the massive amount of snow that feel in Evergreen those years. From the graph "The amount of Snowfall in three locations between April-September by Year", it showed that both those years got 30+ inches of snow in the early months of the monitoring season. However that doesn't explain why 2019 was also cooler than average, one reason could be that the percipitation in May of 2019 was high relative to the other months which could lead to the area being cooler than other years. Then after July we then begin to see the temperatures cool off for 2016 and 2017, while 2018 and 2019 stay much warmer than average. These major changes are likely due to Evergreen being in the mountains, some years it snows a lot and in turn that makes that area colder while other drier years we get a longer summer. This can affect butterflies each year becasue if there is too much variablity in weather patterns some species may die before they complete their life cycle. These yearly up's and down's are becoming more likely due to Colorado's climate shifting, causing the drastic changes year to year.
+
+```{r, echo=FALSE, message=FALSE}
+General_Climate$Location <- as.character(General_Climate$Location)
+General_Climate$Location <- factor(General_Climate$Location, levels =unique(General_Climate$Location))
+Steamboat_Climate <- filter(General_Climate, Location =="Steamboat")
+Steamboat_dotplot <- ggplot(data=Steamboat_Climate, aes(x= Month, y=Tempurature, group= Year, color=as.factor(Year))) + geom_point() + geom_line() + theme(legend.position="top", axis.text.x = element_text(angle=45, hjust=1)) + labs(color="Year") + ylab("Temperature")
+
+Average_Temp <- read.csv("Average_Temp.csv")
+Climate.par <- par(mfrow=c(1,2))
+Average_Temp$Month <- as.character(Average_Temp$Month)
+Average_Temp$Month <- factor(Average_Temp$Month, levels =unique(Average_Temp$Month))
+
+Average_Temp_Steamboat <- filter(Average_Temp, Site =="Steamboat")
+Average_dotplot <- ggplot(data=Average_Temp_Steamboat, aes(x=Month, y=Average.Temp, group=Site)) + geom_point() + geom_line() + geom_label_repel(aes(label=Average.Temp), size=3)  + ggtitle("Average Temperature in Steamboat compared \nto Actual Temperature")+ theme( axis.text.x = element_text(angle=45, hjust=1), plot.title=element_text(size=10)) + ylab("Average Temperature")
+grid.arrange(Average_dotplot, Steamboat_dotplot, ncol=2)
+```
+
+As in our other three locations there is a clear trend that 2018 was the warmest year on average while 2019 was a much cooler season. A common trend for each year seems to be that the spring months are generally colder than what Colorado expects on average leading to the fall months staying much warmer longer. Even though we only have four year of data this trend is ever present in all three locations studied and would have a lasting effect on the butterfly species in those areas. A major concern for butterflies in the Steamboat area would be that May has been paticularly cold every year but 2018. If this trend continues we may start seeing the butterflies in that area not emegre untill June which could lead to a skew of the data if volunteers were to monitor that site in the early part of the season. 
+
+## Individual Site Statisitcs
+
+# Aldefer/3 Sisters
+```{r, echo=FALSE}
+General_Aldefer <- read.csv("Aldefer_4_Years.csv")
+
+Aldefer_dotplot <- ggplot(data= General_Aldefer, aes(x=Year, y=Count, group=Species, color=Species, text = paste(Count, Species))) + geom_point() + geom_line() + ggtitle("Only Species seen all four years") 
+ggplotly(Aldefer_dotplot, tooltip="text") 
+```
+```{r, echo=FALSE}
+set.seed(124)
+Seen_Aldefer <- read.csv("Aldefer_seen.csv")
+Aldefer_Seenplot <- ggplot(data=Seen_Aldefer, aes(x=Seen.at.least.three.times*2-1, y=Seen.in.last.two.years*2-1, color=factor(Seen.in.last.two.years), label=Species)) + geom_point()  + geom_label_repel(aes(label=Species), size=3) + xlab("Seen at Least three of four years") + ylab("Seen in 2018 & 2019") + ggtitle("Butterfly Species Seen at the Aldefer/ 3 Sisters site ") + theme(legend.position = "none", axis.text= element_blank()) + geom_hline(aes(yintercept = .5),linetype= "solid", color="black") + geom_vline(aes(xintercept = .5),linetype= "solid", color="black") + geom_text(aes(x=-0.5, y=2.5), label= "(No, Yes)", hjust=1, size=3, color="black") + geom_text(aes(x=1.5, y=2.5), label= "(Yes,Yes)", hjust=1, size=3, color="black") + geom_text(aes(x=-0.5, y=-1.5), label= "(No,No)", hjust=1, size=3, color="black") + geom_text(aes(x=1.5, y=-1), label= "(Yes,No)", hjust=1, size=3, color="black") + geom_text(aes(x=2, y=-2 ), label= "(3/4 Years, 2018 & 2019)", hjust=1, size=2, color="black")
+Aldefer_Seenplot + coord_cartesian(xlim= c(-1,2), ylim=c(-2,3)) 
+```
+```{r, echo=FALSE}
+Count_Temp <- read.csv("Count_Temp_Combo.csv")
+Count_Temp_Aldefer <- filter(Count_Temp, Site == "Alderfer/3 Sisters")
+Count_Temp_Aldefer$Month <- as.character(Count_Temp_Aldefer$Month)
+Count_Temp_Aldefer$Month <- factor(Count_Temp_Aldefer$Month, levels =unique(Count_Temp_Aldefer$Month))
+
+Count_Temp_Aldefer_plot <- ggplot(data=Count_Temp_Aldefer, aes(x=Month, y=Count, group=Year, color= Tempurature)) + geom_point( ) + geom_line() + facet_wrap(~Year) + scale_color_gradient(low= "blue", high= "red") + ggtitle("Counts seen in Aldefer/ 3 Sisters by Month with Temperature") + theme( axis.text.x = element_text(angle=45, hjust=1)) + ylim(-15, 125)
+ggplotly(Count_Temp_Aldefer_plot)
+```
+
+# Sand Creek Riparian Preserve
+```{r, echo=FALSE}
+General_SCRP <- read.csv("SCRP_4_Years.csv")
+
+SCRP_dotplot <- ggplot(data= General_SCRP, aes(x=Year, y=Count, group=Species, color=Species, text = paste(Count, Species))) + geom_point() + geom_line() + ggtitle("Only Species seen all four years") 
+ggplotly(SCRP_dotplot, tooltip="text") 
+```
+```{r, echo=FALSE}
+Seen_SCRP <- read.csv("SCRP_seen.csv")
+
+SCRP_Seenplot <- ggplot(data=Seen_SCRP, aes(x=(Seen.at.least.three.times *3-1), y=(Seen.in.last.two.years*3-1), color=factor(Seen.in.last.two.years), text=paste(Species))) + geom_point() + geom_label_repel(aes(label=Species), size=3) + xlab("Seen at Least three of four years") + ylab("Seen in 2018 & 2019") + ggtitle("Butterfly Species Seen at the Sand Creek Riparian site ") + theme(legend.position = "none", axis.text = element_blank()) + geom_hline(aes(yintercept = .5),linetype= "solid", color="black") + geom_vline(aes(xintercept = .5),linetype= "solid", color="black") + theme(legend.position = "none", axis.text = element_blank()) + geom_hline(aes(yintercept = .5),linetype= "solid", color="black") + geom_vline(aes(xintercept = .5),linetype= "solid", color="black") + geom_text(aes(x=-0.5, y=2.5), label= "(No, Yes)", hjust=1, size=3, color="black") + geom_text(aes(x=1.2, y=3), label= "(Yes,Yes)", hjust=1, size=3, color="black") + geom_text(aes(x=-1, y=-2.5), label= "(No,No)", hjust=1, size=3, color="black") + geom_text(aes(x=2.5, y=-2), label= "(Yes,No)", hjust=1, size=3, color="black") + geom_text(aes(x=3, y=-3 ), label= "(3/4 Years, 2018 & 2019)", hjust=1, size=2, color="black")
+SCRP_Seenplot + coord_cartesian(xlim= c(-1.5, 3), ylim=c(-3,3.5))
+```
+```{r, echo=FALSE}
+Count_Temp <- read.csv("Count_Temp_Combo.csv")
+Count_Temp_SCRP <- filter(Count_Temp, Site == "Sand Creek Riparian Preserve")
+Count_Temp_SCRP$Month <- as.character(Count_Temp_SCRP$Month)
+Count_Temp_SCRP$Month <- factor(Count_Temp_SCRP$Month, levels =unique(Count_Temp_SCRP$Month))
+
+Count_Temp_SCRP_plot <- ggplot(data=Count_Temp_SCRP, aes(x=Month, y=Count, group=Year, color= Tempurature)) + geom_point( ) + geom_line() + facet_wrap(~Year) + scale_color_gradient(low= "blue", high= "red") + ggtitle("Counts seen in Sand Creek Riparian Preserve by Month with Temperature") + theme( axis.text.x = element_text(angle=45, hjust=1)) + ylim(-30, 600)
+ggplotly(Count_Temp_SCRP_plot)
+```
+
+# Upper Big Bluestem Trail
+```{r, echo=FALSE}
+General_UBBT <- read.csv("UBBT_4_Years.csv")
+
+UBBT_dotplot <- ggplot(data= General_UBBT, aes(x=Year, y=Count, group=Species, color=Species, text = paste(Count, Species))) + geom_point() + geom_line() + ggtitle("Only Species seen all four years") 
+ggplotly(UBBT_dotplot, tooltip="text") 
+```
+```{r, echo=FALSE}
+Seen_UBBT <- read.csv("UBBT_seen.csv")
+UBBT_Seenplot <- ggplot(data=Seen_UBBT, aes(x=(Seen.at.least.three.times*20-7), y=(Seen.in.last.two.years*17-7), color=factor(Seen.in.last.two.years), text=paste(Species))) + geom_point() + geom_label_repel(aes(label=Species), size=3) + xlab("Seen at Least three of four years") + ylab("Seen in 2018 & 2019") + ggtitle("Butterfly Species Seen at Upper Big Bluestem Trail") + theme(legend.position = "none", axis.text = element_blank()) + geom_hline(aes(yintercept = .5),linetype= "solid", color="black") + geom_vline(aes(xintercept = .5),linetype= "solid", color="black")  + theme(legend.position = "none", axis.text = element_blank()) + geom_hline(aes(yintercept = .5),linetype= "solid", color="black") + geom_vline(aes(xintercept = .5),linetype= "solid", color="black") + geom_text(aes(x=-4.5, y=5), label= "(No, Yes)", hjust=1, size=3, color="black") + geom_text(aes(x=1.5, y=5), label= "(Yes,Yes)", hjust=1, size=3, color="black") + geom_text(aes(x=-5, y=-5), label= "(No,No)", hjust=1, size=3, color="black") + geom_text(aes(x=7, y=-6.5), label= "(Yes,No)", hjust=1, size=3, color="black") + geom_text(aes(x=20, y=-20 ), label= "(3/4 Years, 2018 & 2019)", hjust=1, size=2, color="black")
+UBBT_Seenplot + coord_cartesian(xlim= c(-20, 20), ylim=c(-20,20))
+```
+```{r, echo=FALSE}
+Count_Temp <- read.csv("Count_Temp_Combo.csv")
+Count_Temp_UBBT <- filter(Count_Temp, Site == "Upper Big Bluestem Trail")
+Count_Temp_UBBT$Month <- as.character(Count_Temp_UBBT$Month)
+Count_Temp_UBBT$Month <- factor(Count_Temp_UBBT$Month, levels =unique(Count_Temp_UBBT$Month))
+
+Count_Temp_UBBT_plot <- ggplot(data=Count_Temp_UBBT, aes(x=Month, y=Count, group=Year, color= Tempurature)) + geom_point( ) + geom_line() + facet_wrap(~Year) + scale_color_gradient(low= "blue", high= "red") + ggtitle("Counts seen in Upper Big Bluestem Trail by Month with Temperature") + theme( axis.text.x = element_text(angle=45, hjust=1)) + ylim(-30, 600)
+ggplotly(Count_Temp_UBBT_plot)
+```
+
+# Steamboat Springs State Park
+```{r, echo=FALSE}
+General_Steamboat <- read.csv("Steamboat_4_Years.csv")
+
+Steamboat_dotplot <- ggplot(data= General_Steamboat, aes(x=Year, y=Count, group=Species, color=Species, text = paste(Count, Species))) + geom_point() + geom_line() + ggtitle(label = "Only Species seen all four years") 
+ggplotly(Steamboat_dotplot, tooltip="text") 
+```
+```{r, echo=FALSE}
+Seen_Steamboat <- read.csv("Steamboat_seen.csv")
+Steamboat_Seenplot <- ggplot(data=Seen_Steamboat, aes(x=(Seen.at.least.three.times*16-8), y=(Seen.in.last.two.years*9-4.5), color=factor(Seen.in.last.two.years), text=paste(Species))) + geom_point() + geom_label_repel(aes(label=Species), size=3) + xlab("Seen at Least three of four years") + ylab("Seen in 2018 & 2019") + ggtitle("Butterfly Species Seen at Steamboat Spring State Park") + theme(legend.position = "none", axis.text = element_blank()) + geom_hline(aes(yintercept = .5),linetype= "solid", color="black") + geom_vline(aes(xintercept = .5),linetype= "solid", color="black") + theme(legend.position = "none", axis.text = element_blank()) + geom_hline(aes(yintercept = .5),linetype= "solid", color="black") + geom_vline(aes(xintercept = .5),linetype= "solid", color="black") + geom_text(aes(x=-10, y=10), label= "(No, Yes)", hjust=1, size=3, color="black") + geom_text(aes(x=3, y=11), label= "(Yes,Yes)", hjust=1, size=3, color="black") + geom_text(aes(x=-10, y=-10), label= "(No,No)", hjust=1, size=3, color="black") + geom_text(aes(x=13, y=-10.5), label= "(Yes,No)", hjust=1, size=3, color="black") + geom_text(aes(x=15, y=-14 ), label= "(3/4 Years, 2018 & 2019)", hjust=1, size=2, color="black")
+Steamboat_Seenplot + coord_cartesian(xlim= c(-15, 15), ylim=c(-14,14))
+```
+```{r, echo=FALSE}
+Count_Temp <- read.csv("Count_Temp_Combo.csv")
+Count_Temp_Steamboat <- filter(Count_Temp, Site == "Steamboat Lake State Park")
+Count_Temp_Steamboat$Month <- as.character(Count_Temp_Steamboat$Month)
+Count_Temp_Steamboat$Month <- factor(Count_Temp_Steamboat$Month, levels =unique(Count_Temp_Steamboat$Month))
+
+Count_Temp_Steamboat_plot <- ggplot(data=Count_Temp_Steamboat, aes(x=Month, y=Count, group=Year, color= Tempurature)) + geom_point( ) + geom_line() + facet_wrap(~Year) + scale_color_gradient(low= "blue", high= "red") + ggtitle("Counts seen in Steamboat State Park by Month with Temperature") + theme( axis.text.x = element_text(angle=45, hjust=1)) + ylim(-20, 400)
+ggplotly(Count_Temp_Steamboat_plot)
+```
+
+# Broomfield Commons Park
+```{r, echo=FALSE}
+General_Broomfield <- read.csv("Broomfield_4_Years.csv")
+
+Broomfield_dotplot <- ggplot(data= General_Broomfield, aes(x=Year, y=Count, group=Species, color=Species, text = paste(Count, Species))) + geom_point() + geom_line() + ggtitle("Only Species seen all four years") 
+ggplotly(Broomfield_dotplot, tooltip="text") 
+```
+```{r, echo=FALSE}
+Seen_Broomfield <- read.csv("Broomfield_seen.csv")
+Broomfield_Seenplot <- ggplot(data=Seen_Broomfield, aes(x=Seen.at.least.three.times, y=Seen.in.last.two.years, color=factor(Seen.in.last.two.years), text=paste(Species))) + geom_point() + geom_label_repel(aes(label=Species), size=3) + xlab("Seen at Least three of four years") + ylab("Seen in 2018 & 2019") + ggtitle("Butterfly Species Seen at Broomfield Commons Park") + theme(legend.position = "none", axis.text = element_blank()) + geom_hline(aes(yintercept = .5),linetype= "solid", color="black") + geom_vline(aes(xintercept = .5),linetype= "solid", color="black") + theme(legend.position = "none", axis.text = element_blank()) + geom_hline(aes(yintercept = .5),linetype= "solid", color="black") + geom_vline(aes(xintercept = .5),linetype= "solid", color="black") + geom_text(aes(x=-0.5, y=2.5), label= "(No, Yes)", hjust=1, size=3, color="black") + geom_text(aes(x=1.5, y=2.5), label= "(Yes,Yes)", hjust=1, size=3, color="black") + geom_text(aes(x=-0.5, y=-1.5), label= "(No,No)", hjust=1, size=3, color="black") + geom_text(aes(x=1.5, y=-1), label= "(Yes,No)", hjust=1, size=3, color="black") + geom_text(aes(x=2, y=-2 ), label= "(3/4 Years, 2018 & 2019)", hjust=1, size=2, color="black")
+Broomfield_Seenplot + coord_cartesian(xlim= c(-1,2), ylim=c(-2,3)) 
+```
+```{r, echo=FALSE}
+Count_Temp <- read.csv("Count_Temp_Combo.csv")
+Count_Temp_Broomfield <- filter(Count_Temp, Site == "Broomfield Commons Park")
+Count_Temp_Broomfield$Month <- as.character(Count_Temp_Broomfield$Month)
+Count_Temp_Broomfield$Month <- factor(Count_Temp_Broomfield$Month, levels =unique(Count_Temp_Broomfield$Month))
+
+Count_Temp_Broomfield_plot <- ggplot(data=Count_Temp_Broomfield, aes(x=Month, y=Count, group=Year, color= Tempurature)) + geom_point( ) + geom_line() + facet_wrap(~Year) + scale_color_gradient(low= "blue", high= "red") + ggtitle("Counts seen in Broomfield Commons Park by Month with Temperature") + theme( axis.text.x = element_text(angle=45, hjust=1)) + ylim(-20, 350)
+ggplotly(Count_Temp_Broomfield_plot)
+```
+
+# Temporal Analysis
+
+```{r, echo=FALSE, eval=FALSE}
+Time_Model <- read.csv("Full_Model.csv")
+
+Time_Model$Site <- as.factor(Time_Model$Site)
+Time_Model$Site <- factor(Time_Model$Site, levels =unique(Time_Model$Site))
+Time_Model$Route <- as.factor(Time_Model$Route)
+Time_Model$Route <- factor(Time_Model$Route, levels =unique(Time_Model$Route))
+Aldefer_Time_Model <- filter(Time_Model, Site =="Alderfer/3 Sisters")
+
+
+Time_Plot <- ggplot(data=Aldefer_Time_Model, aes(x=Start, y= Total, group=Total)) + geom_point() + geom_line(size=1)
+Time_Plot
+```
+
+## Prediction
+
+# Identifying the best Model
+
+```{r, echo=FALSE, eval=FALSE, eval=FALSE}
+Full_Model <- read.csv("Full_Model.csv")
+
+Full_Model$Site <- as.factor(Full_Model$Site)
+Full_Model$Site <- factor(Full_Model$Site, levels =unique(Full_Model$Site))
+Full_Model$Route <- as.factor(Full_Model$Route)
+Full_Model$Route <- factor(Full_Model$Route, levels =unique(Full_Model$Route))
+
+Full_Model <- filter(Full_Model, Total !=0)
+```
+
+```{r, echo=FALSE, eval=FALSE}
+Regression1 <- glm(Total~ Duration  + Temperature + Sky + Wind, data= Full_Model, family = Gamma(link="log"))
+Regression2 <- glm(Total~ Duration + Temperature, data= Full_Model, family= Gamma(link="log"))
+Regression3 <- glm(Total~  Sky + Wind, data= Full_Model, family = Gamma(link="log"))
+Regression4 <- glm(Total~ Duration  + Temperature + Sky, data= Full_Model, family = Gamma(link="log"))
+Regression5 <- glm(Total~ Temperature + Sky + Wind, data= Full_Model, family = Gamma(link="log"))
+Regression6 <- glm(Total~ Duration  + Temperature + Wind, data= Full_Model, family = Gamma(link="log"))
+Regression7 <- glm(Total~ Duration + Sky + Wind, data= Full_Model, family = Gamma(link="log"))
+Regression8 <- glm(Total~ Duration + Wind, data= Full_Model, family = Gamma(link="log"))
+Regression9 <- glm(Total~ Duration + Sky , data= Full_Model, family = Gamma(link="log"))
+
+AIC(Regression1, Regression2, Regression3, Regression4, Regression5, Regression6, Regression7, Regression8, Regression9, k=2)
+BIC(Regression1, Regression2, Regression3, Regression4, Regression5, Regression6, Regression7, Regression8, Regression9)
+```
+aov.summary <- aov(Regression1)
+summary(Regression1)
+summary(aov.summary)
+plot(Regression1)
+
+## Discussion
+
+# Results
+
+# Limitations
+
+The CBMN program is still a new and growing program attracting more and more volunteers each year allowing them to grow into expert surveyers. The program relys on these volunteers to collect meaningful data from specific sites and is dependant on using experts to fill any knowledge gaps that occur during the research process. It's vital to have these experts around when completing this project becasue the data is so new that we don't have enough data to support our findings. This is the main problem when it comes to trying to identify how different butterfly spcies are affected by climate change in Colorado. 
+
+Using volunteers to collect data is going to involve some risk due to them not being experts in butterfly identification. Volunteers could mistake Monarchs and Painted Ladies due to the mimiking affect the painted ladies have and we at the Butterfly Pavillion don't hve the tools to catch incorrectly completed surveys. Even eith the resources we have we need to rely on our volunteers to be accurate when identifying species in order to create reports and do studies with the data collected. All volunteers undergo a training session in order to help them properly identify butterflies and in order to explain how we need them to collect data in order for our studies to be uniform. Also, after their training session they are encouraged to keep in contact and take pictures of butetrflies if they have questions about species identification. While we have steps in place to train volunteers, butterflies can be tricky! They don't stay in one spot for voluntters to take pictures, there are many species that mimick whcich cause confusion, and somtimes they fly away to fast so volunteers just make them as "Unidentified ________". Each year we maintain the same volunteers the program gets stronger, the routes they monitor become established and consistent monitoring of sites can be done. Volunteers are the only way this surveying can be done at such a large scale so the reward of useable data outways the risk of inexperience however it always needs to be accounted for when using volunteers.
+
+The main limitation comes with the amount of data and reliance on experts to identify trends. Since we only have useable data from 2014 and beyond we don't have enough data to make a conclusion on butterfly population changes. Therefore we needed to focus on how to get a basic idea and possible predictions about what we could see in the future of butterfly monitoring. It's impossible to say a few variables are the sole reason certain butterfly species are declining in population, however we have enough data to identify trends. We can show what has been seen in the last five years of data collection and use it as a possible baseline for any changes we begin to see in Colorado's butterfly population. This is the main limitation with the data becasue unlike data sets with thousands of points the data fom Pollardbase only conatin a few hundred at most. As the program continues this problem will be minimized but it is uncontrollable and heavily time relevant. While we can improve volunteers ability to identify butterflies the only way to get more data is to consistently monitor the sites that we already have in order for future researchers to come to more solid results of the affects of climate change on Colorado's butterflies.
+
+# Suggestions: PollardBase
+
+PollardBase makes it easy to access data, makes uploading volunteer surveys simple, and makes categorizing survey's easy. However, it does an extremely poor job at being versitile for complex projects that need to download huge data sets for analysis and Pollardbase can make it difficult to access variables, paticularly regarding habitat. When downloading reports from pollardbase the excel spreadsheet given can be confusing, unorganized, and uncondensed depending on the report or observation you download. PollardBase seperates reports from observations downloads that seem to have no real difference besides the number of variables you get with the observation downlods is much more than the reports downloads. The observation downloads aren't descriptive enough when looking at habitat where the butterfly species were seen, and it gives a non-condensed description that can lead to more confusion. PollardBase should move to a new system that allows you to search by habitat or any specific variable of intrest and let you download data from there. This would allow for a more concise look at specific variables of intrest and would reduce the confusion created by these downloads.
+
+# Suggestions: Monitors
+
+A majority of the error we get in the surveys comes from human error. Volunteers may count wrong, identify incorrectly, or put in a incorrect descrition of the duration or temperature on their route. Although every survey is looked at by an intern or staff memeber at the Butterfly Pavilion it would be impossible for them to know if someone input wrong information unless it was  obvious they made a mistake or they included a picture from their route. Pictures are so much more descriptive than the descriptions used now and the monitors in the CBMN program should be required to take pictures while on thier routes. If monitors at least take pictures of the habitat they are in it can be more helpful to the program beacsue then we can compare the different types of habiat and get a better idea of what the monitors saw when they were looking for butterflies. Being able to see where the volunteer said a transitional ecotone or shrub upland can make our data stronegr becasue we could go through the images to make sure the habitat data is inputed correctly. While volunteers can't take pictures of every butterfly they see this would be a great way to learn more about the habitat and plant life on the route so we can make predictions about why certain species were in that area. Although some monitors may not have cameras or have the ability to take pictures, this could lead to more accuracy and allow for more confidence in our results.
+
+# Conclusion
+
+## Citations
+Not actual Citations!!!!!
+https://www.usclimatedata.com/climate/colorado/united-states/3175
+https://www.accuweather.com/en/us/denver/80203/september-weather/347810?year=2019&view=list
+Book: Butterflies: Ecology and Evolution taking flight chapter 24
+https://www.nature.com/articles/nclimate2746
+http://www.naturemuseum.org/the-museum/blog/where-do-butterflies-go-in-the-winter
+https://www.learnaboutbutterflies.com/Migration.htm
+https://www.naba.org/pubs/ab201/ab201butterflies_and_climate_change.pdf
